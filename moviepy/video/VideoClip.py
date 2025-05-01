@@ -1691,8 +1691,15 @@ class TextClip(ImageClip):
                     max_width=img_width,
                 )[1]
 
+        if font:
+            pil_font = ImageFont.truetype(font, font_size)
+        else:
+            pil_font = ImageFont.load_default(font_size)
+
+        (ascent, descent) = pil_font.getmetrics()
+
         img_width += left_margin + right_margin
-        img_height += top_margin + bottom_margin
+        img_height += top_margin + bottom_margin + descent
 
         # Trace the image
         img_mode = "RGBA" if transparent else "RGB"
@@ -1701,11 +1708,9 @@ class TextClip(ImageClip):
             bg_color = (0, 0, 0, 0)
 
         img = Image.new(img_mode, (img_width, img_height), color=bg_color)
-        if font:
-            pil_font = ImageFont.truetype(font, font_size)
-        else:
-            pil_font = ImageFont.load_default(font_size)
+
         draw = ImageDraw.Draw(img)
+
 
         # Dont need allow break here, because we already breaked in caption
         text_width, text_height = self.__find_text_size(
@@ -1735,7 +1740,6 @@ class TextClip(ImageClip):
         # always have a useless margin (the diff between ascender and top) on any
         # text. That mean our Y is actually not from 0 for top, but need to be
         # increment by ascent, since we have to reference from baseline.
-        (ascent, _) = pil_font.getmetrics()
         y += ascent
 
         # Add margins and stroke size to start point
@@ -1767,7 +1771,7 @@ class TextClip(ImageClip):
         self.stroke_color = stroke_color
 
     def __break_text(
-        self, width, text, font, font_size, stroke_width, align, spacing
+            self, width, text, font, font_size, stroke_width, align, spacing
     ) -> List[str]:
         """Break text to never overflow a width"""
         img = Image.new("RGB", (1, 1))
@@ -1783,9 +1787,10 @@ class TextClip(ImageClip):
         # We try to break on spaces as much as possible
         # if a text dont contain spaces (ex chinese), we will break when possible
         last_space = 0
-        for index, char in enumerate(text):
+        current_line_index = 0
+        for char in text:
             if char == " ":
-                last_space = index
+                last_space = current_line_index
 
             temp_line = current_line + char
             temp_left, temp_top, temp_right, temp_bottom = draw.multiline_textbbox(
@@ -1804,14 +1809,19 @@ class TextClip(ImageClip):
                 # to previous char
                 if last_space:
                     lines.append(temp_line[0:last_space])
-                    current_line = temp_line[last_space + 1 : index + 1]
+                    current_line = temp_line[last_space + 1: current_line_index + 1]
                     last_space = 0
                 else:
-                    lines.append(current_line[0:index])
+                    lines.append(current_line[0:current_line_index])
                     current_line = char
                     last_space = 0
+
+                current_line_index = len(current_line) - 1
+
             else:
                 current_line = temp_line
+
+            current_line_index += 1
 
         if current_line:
             lines.append(current_line)
