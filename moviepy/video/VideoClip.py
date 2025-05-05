@@ -1699,7 +1699,7 @@ class TextClip(ImageClip):
         (ascent, descent) = pil_font.getmetrics()
 
         img_width += left_margin + right_margin
-        img_height += top_margin + bottom_margin + descent
+        img_height += top_margin + bottom_margin
 
         # Trace the image
         img_mode = "RGBA" if transparent else "RGB"
