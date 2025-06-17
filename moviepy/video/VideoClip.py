@@ -1783,9 +1783,10 @@ class TextClip(ImageClip):
         # We try to break on spaces as much as possible
         # if a text dont contain spaces (ex chinese), we will break when possible
         last_space = 0
-        for index, char in enumerate(text):
+        current_line_index = 0
+        for char in text:
             if char == " ":
-                last_space = index
+                last_space = current_line_index
 
             temp_line = current_line + char
             temp_left, temp_top, temp_right, temp_bottom = draw.multiline_textbbox(
@@ -1804,14 +1805,19 @@ class TextClip(ImageClip):
                 # to previous char
                 if last_space:
                     lines.append(temp_line[0:last_space])
-                    current_line = temp_line[last_space + 1 : index + 1]
+                    current_line = temp_line[last_space + 1: current_line_index + 1]
                     last_space = 0
                 else:
-                    lines.append(current_line[0:index])
+                    lines.append(current_line[0:current_line_index])
                     current_line = char
                     last_space = 0
+
+                current_line_index = len(current_line) - 1
+
             else:
                 current_line = temp_line
+
+            current_line_index += 1
 
         if current_line:
             lines.append(current_line)
