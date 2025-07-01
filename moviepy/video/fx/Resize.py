@@ -48,6 +48,9 @@ class Resize(Effect):
     def resizer(self, pic, new_size):
         """Resize the image using PIL."""
         new_size = list(map(int, new_size))
+        if not all(new_size):
+            print(pic.shape)
+            return np.zeros((0, 0, pic.shape[2]))
         pil_img = Image.fromarray(pic)
         resized_pil = pil_img.resize(new_size, Image.Resampling.LANCZOS)
         return np.array(resized_pil)
